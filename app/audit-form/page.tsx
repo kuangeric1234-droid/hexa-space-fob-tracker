@@ -144,7 +144,7 @@ export default function AuditFormPage() {
                     autoComplete="off"
                   />
                   {showDropdown && nameResults.length > 0 && (
-                    <div className="absolute top-full mt-1 w-full bg-white border border-gray-100 rounded-xl shadow-lg z-20 overflow-hidden">
+                    <div className="absolute top-full mt-1 w-full bg-white border border-gray-100 rounded-xl shadow-lg z-20 overflow-y-auto max-h-60">
                       {nameResults.map(m => (
                         <button key={m.id} type="button"
                           className="w-full text-left px-4 py-3 hover:bg-violet-50 transition-colors border-b border-gray-50 last:border-0"
