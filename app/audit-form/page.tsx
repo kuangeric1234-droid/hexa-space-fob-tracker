@@ -127,10 +127,7 @@ export default function AuditFormPage() {
               <label className="text-sm font-medium text-gray-700">Your name</label>
               {selectedMember ? (
                 <div className="flex items-center justify-between p-3 rounded-xl border border-violet-200 bg-violet-50">
-                  <div>
-                    <p className="font-medium text-sm text-gray-900">{selectedMember.name}</p>
-                    <p className="text-xs text-gray-400">{selectedMember.suite ?? selectedMember.company ?? ''}</p>
-                  </div>
+                  <p className="font-medium text-sm text-gray-900">{selectedMember.name}</p>
                   <button type="button" className="text-xs text-violet-600 hover:text-violet-800"
                     onClick={() => { setSelectedMember(null); setNameQuery('') }}>
                     Change
@@ -153,7 +150,6 @@ export default function AuditFormPage() {
                           className="w-full text-left px-4 py-3 hover:bg-violet-50 transition-colors border-b border-gray-50 last:border-0"
                           onClick={() => { setSelectedMember(m); setNameQuery(m.name); setShowDropdown(false) }}>
                           <p className="text-sm font-medium text-gray-900">{m.name}</p>
-                          {(m.suite ?? m.company) && <p className="text-xs text-gray-400">{m.suite ?? m.company}</p>}
                         </button>
                       ))}
                     </div>
