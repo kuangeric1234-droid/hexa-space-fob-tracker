@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent } from '@/components/ui/card'
 import Link from 'next/link'
+import { FobImport } from '@/components/fob-import'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,9 +58,12 @@ export default async function FobsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold">Inventory</h1>
-        <Link href="/issue" className="text-sm text-blue-600 hover:underline">+ Issue fob</Link>
+        <div className="flex items-center gap-2">
+          <FobImport />
+          <Link href="/issue" className="text-sm text-violet-600 hover:underline font-medium">+ Issue fob</Link>
+        </div>
       </div>
 
       {/* Filters */}
