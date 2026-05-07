@@ -12,6 +12,7 @@ import {
   Key,
   Users,
   ClipboardList,
+  FileCheck,
   Settings,
   LogOut,
   Menu,
@@ -45,6 +46,7 @@ const navGroups = [
     label: 'System',
     items: [
       { href: '/audit', label: 'Audit log', icon: ClipboardList },
+      { href: '/audit-form/responses', label: 'Audit responses', icon: FileCheck },
       { href: '/settings', label: 'Settings', icon: Settings },
     ],
   },

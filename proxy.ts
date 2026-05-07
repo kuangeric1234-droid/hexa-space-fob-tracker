@@ -2,8 +2,13 @@ import { type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
 export async function proxy(request: NextRequest) {
-  // Skip proxy for cron (protected by secret header instead)
-  if (request.nextUrl.pathname.startsWith('/api/cron')) {
+  const { pathname } = request.nextUrl
+  // Public routes — no auth required
+  if (
+    pathname.startsWith('/api/cron') ||
+    pathname.startsWith('/audit-form') ||
+    pathname.startsWith('/api/audit-form')
+  ) {
     return
   }
   return updateSession(request)
