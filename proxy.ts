@@ -1,16 +1,11 @@
 import { type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
+const PUBLIC_PATHS = ['/login', '/audit-form', '/api/audit-form', '/api/cron']
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-  // Public routes — no auth required
-  if (
-    pathname.startsWith('/api/cron') ||
-    pathname.startsWith('/audit-form') ||
-    pathname.startsWith('/api/audit-form')
-  ) {
-    return
-  }
+  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) return
   return updateSession(request)
 }
 
