@@ -32,12 +32,23 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const token = await getToken()
 
-  if (searchParams.get('accounts')) {
-    const [v1, v2] = await Promise.all([
-      f(`${API_V1}/accounts`, token),
-      f(`${API_V2}/accounts`, token),
+  // Probe charges endpoints with an empty POST to see what fields are required
+  if (searchParams.get('probe')) {
+    const body = JSON.stringify({})
+    const results = await Promise.all([
+      f(`${API_V2}/charges`, token, { method: 'POST', body }),
+      f(`${API_V2}/billing/charges`, token, { method: 'POST', body }),
+      f(`${API_V1}/charges`, token, { method: 'POST', body }),
+      f(`${API_V2}/charges`, token),       // GET list
+      f(`${API_V2}/billing/charges`, token), // GET list
     ])
-    return NextResponse.json({ v1_accounts: v1, v2_accounts: v2 })
+    return NextResponse.json({
+      'POST v2/charges': results[0],
+      'POST v2/billing/charges': results[1],
+      'POST v1/charges': results[2],
+      'GET v2/charges': results[3],
+      'GET v2/billing/charges': results[4],
+    })
   }
 
   const id = searchParams.get('id')
@@ -49,5 +60,5 @@ export async function GET(request: Request) {
     return NextResponse.json({ id, v1_membership: membership, v1_fee: fee })
   }
 
-  return NextResponse.json({ usage: 'add ?accounts=1 to list revenue accounts, or ?id=<id> to look up a record' })
+  return NextResponse.json({ usage: 'add ?probe=1 to test charge endpoints, or ?id=<id> to look up a record' })
 }
