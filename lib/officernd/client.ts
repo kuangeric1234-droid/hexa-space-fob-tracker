@@ -219,16 +219,20 @@ const FOB_DEPOSIT_PLAN_ID = '6a051a414427d505a37e50c7'
 const LOCATION_ID = '5d1bcda0dbd6e40010479eec'
 
 export async function createFee(payload: CreateFeePayload): Promise<{ id: string }> {
+  const member = await apiFetch(`/members/${payload.memberId}`, {}, true)
+  const companyId: string | undefined = member?.team
+
   const data = await apiFetch('/fees', {
     method: 'POST',
     body: JSON.stringify({
       member: payload.memberId,
+      ...(companyId && { company: companyId }),
       name: payload.name,
       price: payload.amount,
       issueDate: new Date().toISOString(),
       location: LOCATION_ID,
       plan: FOB_DEPOSIT_PLAN_ID,
-      isPersonal: true,
+      ...(companyId && { isPersonal: true }),
       shouldBillInAdvance: true,
     }),
   })
@@ -238,17 +242,21 @@ export async function createFee(payload: CreateFeePayload): Promise<{ id: string
 }
 
 export async function createRefundFee(payload: CreateFeePayload): Promise<{ id: string }> {
+  const member = await apiFetch(`/members/${payload.memberId}`, {}, true)
+  const companyId: string | undefined = member?.team
+
   const data = await apiFetch('/fees', {
     method: 'POST',
     body: JSON.stringify({
       member: payload.memberId,
+      ...(companyId && { company: companyId }),
       name: payload.name,
       price: -Math.abs(payload.amount),
       issueDate: new Date().toISOString(),
-      isPersonal: true,
-      shouldBillInAdvance: true,
       location: LOCATION_ID,
       plan: FOB_DEPOSIT_PLAN_ID,
+      ...(companyId && { isPersonal: true }),
+      shouldBillInAdvance: true,
     }),
   })
   const id = data._id ?? data.id
