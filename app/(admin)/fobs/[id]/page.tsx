@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils'
 import type { AssignmentWithRelations } from '@/types'
+import { FobEdit } from '@/components/fob-edit'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,6 +40,7 @@ export default async function FobDetailPage({ params }: { params: Promise<{ id: 
         <Link href="/fobs" className="text-sm text-gray-400 hover:text-gray-700">← Inventory</Link>
         <h1 className="text-2xl font-semibold font-mono">{fob.serial_number}</h1>
         <Badge variant={fob.status === 'available' ? 'default' : 'secondary'}>{fob.status}</Badge>
+        <FobEdit fob={fob} />
       </div>
 
       {/* Details */}
