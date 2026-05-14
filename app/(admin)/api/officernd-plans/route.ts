@@ -50,6 +50,7 @@ export async function GET(request: Request) {
     if (memberId) {
       const body = JSON.stringify({
         member: memberId,
+        company: '6279d138db5187929b83e342',
         name: 'FOB Deposit: TEST-DEBUG',
         price: 1,
         issueDate: new Date().toISOString(),
