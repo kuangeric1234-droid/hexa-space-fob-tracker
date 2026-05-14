@@ -60,5 +60,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ id, v1_membership: membership, v1_fee: fee })
   }
 
-  return NextResponse.json({ usage: 'add ?probe=1 to test charge endpoints, or ?id=<id> to look up a record' })
+  // List plans so we can find the new one
+  const plans = await f(`${API_V1}/plans`, token)
+  const simple = Array.isArray(plans.body)
+    ? plans.body.map((p: any) => ({ id: p._id, name: p.name, type: p.type, interval: p.intervalLength, account: p.account }))
+    : plans.body
+  return NextResponse.json(simple)
 }
