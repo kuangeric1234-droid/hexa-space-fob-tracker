@@ -228,7 +228,6 @@ export async function createFee(payload: CreateFeePayload): Promise<{ id: string
   }
   if (companyId) {
     body.company = companyId
-    body.isPersonal = true
   }
 
   const data = await apiFetch('/fees', { method: 'POST', body: JSON.stringify(body) })
@@ -252,7 +251,6 @@ export async function createRefundFee(payload: CreateFeePayload): Promise<{ id: 
   }
   if (companyId) {
     body.company = companyId
-    body.isPersonal = true
   }
 
   const data = await apiFetch('/fees', { method: 'POST', body: JSON.stringify(body) })
