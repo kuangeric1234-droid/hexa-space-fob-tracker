@@ -232,20 +232,19 @@ export async function createFee(payload: CreateFeePayload): Promise<{ id: string
     plan: FOB_DEPOSIT_PLAN_ID,
   }
 
-  // Try team-scoped endpoint first so fee appears in company One-Off Fees tab
-  if (teamId) {
-    try {
-      const teamData = await apiFetch(`/teams/${teamId}/fees`, { method: 'POST', body: JSON.stringify(body) }, true)
-      const id = teamData._id ?? teamData.id
-      if (id) return { id }
-    } catch {
-      // fall through to global endpoint
-    }
-  }
-
   const data = await apiFetch('/fees', { method: 'POST', body: JSON.stringify(body) })
   const id = data._id ?? data.id
   if (!id) throw new Error(`OfficeRnD fee created but no ID in response: ${JSON.stringify(data)}`)
+
+  // Patch the team field after creation so it appears in company billing
+  if (teamId) {
+    try {
+      await apiFetch(`/fees/${id}`, { method: 'PATCH', body: JSON.stringify({ team: teamId }) }, true)
+    } catch {
+      // non-fatal — fee still exists, just may not show in team tab
+    }
+  }
+
   return { id }
 }
 
