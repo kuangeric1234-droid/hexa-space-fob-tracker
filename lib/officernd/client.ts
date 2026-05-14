@@ -27,11 +27,6 @@ async function getToken(): Promise<string> {
         'flex.space.resources.read',
         'flex.community.fees.create',
         'flex.community.fees.read',
-        'flex.community.memberships.read',
-        'flex.community.memberships.create',
-        'flex.community.memberships.delete',
-        'flex.billing.charges.read',
-        'flex.billing.charges.create',
       ].join(' '),
     }),
   })
