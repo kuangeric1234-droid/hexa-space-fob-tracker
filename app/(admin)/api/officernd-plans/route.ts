@@ -48,15 +48,19 @@ export async function GET(request: Request) {
     const empty = JSON.stringify({})
 
     if (memberId) {
-      // Test with negative unitPrice to see if it creates a charge instead of credit
       const body = JSON.stringify({
-        date: new Date().toISOString().slice(0, 10),
-        location: '5d1bcda0dbd6e40010479eec',
         member: memberId,
-        lines: [{ description: 'FOB Deposit: TEST-CHARGE', unitPrice: -1, quantity: 1 }],
+        name: 'FOB Deposit: TEST-DEBUG',
+        price: 1,
+        issueDate: new Date().toISOString(),
+        location: '5d1bcda0dbd6e40010479eec',
+        plan: '6a051a414427d505a37e50c7',
+        isPersonal: true,
+        isRefundable: true,
+        shouldBillInAdvance: true,
       })
-      const result = await f(`${API_V2}/payments`, token, { method: 'POST', body })
-      return NextResponse.json({ 'POST v2/payments (negative price)': result })
+      const result = await f(`${API_V2}/fees`, token, { method: 'POST', body })
+      return NextResponse.json({ 'POST v2/fees (test)': result })
     }
 
     const [v2pay, recentPay] = await Promise.all([
