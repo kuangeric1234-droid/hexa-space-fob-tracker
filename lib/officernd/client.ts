@@ -219,55 +219,32 @@ const FOB_DEPOSIT_PLAN_ID = '6a051a414427d505a37e50c7'
 const LOCATION_ID = '5d1bcda0dbd6e40010479eec'
 
 export async function createFee(payload: CreateFeePayload): Promise<{ id: string }> {
-  const member = await apiFetch(`/members/${payload.memberId}`, {}, true)
-  const teamId: string | undefined = member?.team
-
-  const body = {
-    member: payload.memberId,
-    ...(teamId && { team: teamId }),
-    name: payload.name,
-    price: payload.amount,
-    issueDate: new Date().toISOString(),
-    location: LOCATION_ID,
-    plan: FOB_DEPOSIT_PLAN_ID,
-  }
-
-  const data = await apiFetch('/fees', { method: 'POST', body: JSON.stringify(body) })
-  const id = data._id ?? data.id
-  if (!id) throw new Error(`OfficeRnD fee created but no ID in response: ${JSON.stringify(data)}`)
-
-  // Patch the team field after creation so it appears in company billing
-  if (teamId) {
-    try {
-      await apiFetch(`/fees/${id}`, { method: 'PATCH', body: JSON.stringify({ team: teamId }) }, true)
-    } catch {
-      // non-fatal — fee still exists, just may not show in team tab
-    }
-  }
-
-  return { id }
-}
-
-export async function createRefundFee(payload: CreateFeePayload): Promise<{ id: string }> {
-  let teamId: string | undefined
-  try {
-    const member = await apiFetch(`/members/${payload.memberId}`, {}, true)
-    teamId = member?.team
-  } catch {
-    // proceed without team if lookup fails
-  }
-
   const data = await apiFetch('/fees', {
     method: 'POST',
     body: JSON.stringify({
       member: payload.memberId,
-      ...(teamId && { team: teamId }),
+      name: payload.name,
+      price: payload.amount,
+      issueDate: new Date().toISOString(),
+      location: LOCATION_ID,
+      plan: FOB_DEPOSIT_PLAN_ID,
+    }),
+  })
+  const id = data._id ?? data.id
+  if (!id) throw new Error(`OfficeRnD fee created but no ID in response: ${JSON.stringify(data)}`)
+  return { id }
+}
+
+export async function createRefundFee(payload: CreateFeePayload): Promise<{ id: string }> {
+  const data = await apiFetch('/fees', {
+    method: 'POST',
+    body: JSON.stringify({
+      member: payload.memberId,
       name: payload.name,
       price: -Math.abs(payload.amount),
       issueDate: new Date().toISOString(),
       location: LOCATION_ID,
       plan: FOB_DEPOSIT_PLAN_ID,
-      isPersonal: true,
     }),
   })
   const id = data._id ?? data.id
