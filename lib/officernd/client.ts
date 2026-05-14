@@ -219,10 +219,20 @@ const FOB_DEPOSIT_PLAN_ID = '6a051a414427d505a37e50c7'
 const LOCATION_ID = '5d1bcda0dbd6e40010479eec'
 
 export async function createFee(payload: CreateFeePayload): Promise<{ id: string }> {
+  // Fetch the member's team ID so the fee appears in company billing
+  let teamId: string | undefined
+  try {
+    const member = await apiFetch(`/members/${payload.memberId}`, {}, true)
+    teamId = member?.team
+  } catch {
+    // proceed without team if lookup fails
+  }
+
   const data = await apiFetch('/fees', {
     method: 'POST',
     body: JSON.stringify({
       member: payload.memberId,
+      ...(teamId && { team: teamId }),
       name: payload.name,
       price: payload.amount,
       issueDate: new Date().toISOString(),
@@ -236,10 +246,19 @@ export async function createFee(payload: CreateFeePayload): Promise<{ id: string
 }
 
 export async function createRefundFee(payload: CreateFeePayload): Promise<{ id: string }> {
+  let teamId: string | undefined
+  try {
+    const member = await apiFetch(`/members/${payload.memberId}`, {}, true)
+    teamId = member?.team
+  } catch {
+    // proceed without team if lookup fails
+  }
+
   const data = await apiFetch('/fees', {
     method: 'POST',
     body: JSON.stringify({
       member: payload.memberId,
+      ...(teamId && { team: teamId }),
       name: payload.name,
       price: -Math.abs(payload.amount),
       issueDate: new Date().toISOString(),
