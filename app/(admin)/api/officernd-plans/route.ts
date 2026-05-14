@@ -5,7 +5,7 @@ const ORG = process.env.OFFICERND_ORG_SLUG
 const API_V1 = `https://app.officernd.com/api/v1/organizations/${ORG}`
 const API_V2 = `https://app.officernd.com/api/v2/organizations/${ORG}`
 
-async function getToken(scope: string) {
+async function getToken() {
   const res = await fetch(IDENTITY_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -13,42 +13,31 @@ async function getToken(scope: string) {
       grant_type: 'client_credentials',
       client_id: process.env.OFFICERND_CLIENT_ID!,
       client_secret: process.env.OFFICERND_CLIENT_SECRET!,
-      scope,
+      scope: 'flex.community.fees.read flex.community.fees.create',
     }),
   })
   const data = await res.json()
   return data.access_token as string
 }
 
-async function tryFetch(url: string, token: string) {
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-  const body = await res.json()
-  return { status: res.status, body }
-}
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const feeId = searchParams.get('fee_id')
 
-export async function GET() {
-  const scopes = [
-    'flex.community.fees.read flex.community.fees.create',
-    'flex.billing.plans.read',
-    'flex.community.members.read',
-  ]
+  const token = await getToken()
 
-  const results: Record<string, any> = {}
-
-  for (const scope of scopes) {
-    try {
-      const token = await getToken(scope)
-      const [v1plans, v2plans, v2feeplans] = await Promise.all([
-        tryFetch(`${API_V1}/plans`, token),
-        tryFetch(`${API_V2}/plans`, token),
-        tryFetch(`${API_V2}/fee-plans`, token),
-      ])
-      results[scope] = { v1_plans: v1plans, v2_plans: v2plans, v2_fee_plans: v2feeplans }
-      break
-    } catch (e: any) {
-      results[scope] = { error: e.message }
-    }
+  if (feeId) {
+    const [v1, v2] = await Promise.all([
+      fetch(`${API_V1}/fees/${feeId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch(`${API_V2}/fees/${feeId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+    ])
+    return NextResponse.json({ fee_id: feeId, v1, v2 })
   }
 
-  return NextResponse.json(results)
+  // List recent fees
+  const [v1fees, v2fees] = await Promise.all([
+    fetch(`${API_V1}/fees?limit=5`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+    fetch(`${API_V2}/fees?limit=5`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+  ])
+  return NextResponse.json({ v1_recent_fees: v1fees, v2_recent_fees: v2fees })
 }
