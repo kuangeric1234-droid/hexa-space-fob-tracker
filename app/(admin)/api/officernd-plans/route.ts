@@ -13,7 +13,7 @@ async function getToken() {
       grant_type: 'client_credentials',
       client_id: process.env.OFFICERND_CLIENT_ID!,
       client_secret: process.env.OFFICERND_CLIENT_SECRET!,
-      scope: 'flex.billing.charges.read flex.billing.charges.create flex.community.fees.read flex.community.memberships.read flex.community.members.read',
+      scope: 'flex.billing.charges.read flex.billing.charges.create flex.billing.payments.documents.read flex.community.fees.read flex.community.members.read',
     }),
   })
   const data = await res.json()
@@ -31,25 +31,41 @@ async function f(url: string, token: string, options?: RequestInit) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const token = await getToken()
-  const id = searchParams.get('id')
 
+  // Probe invoice endpoints
+  if (searchParams.get('probe')) {
+    const empty = JSON.stringify({})
+    const [v2inv, v1inv, v2docs, v2billdocs] = await Promise.all([
+      f(`${API_V2}/invoices`, token, { method: 'POST', body: empty }),
+      f(`${API_V1}/invoices`, token, { method: 'POST', body: empty }),
+      f(`${API_V2}/documents`, token, { method: 'POST', body: empty }),
+      f(`${API_V2}/billing/documents`, token, { method: 'POST', body: empty }),
+    ])
+    return NextResponse.json({
+      'POST v2/invoices': v2inv,
+      'POST v1/invoices': v1inv,
+      'POST v2/documents': v2docs,
+      'POST v2/billing/documents': v2billdocs,
+    })
+  }
+
+  const id = searchParams.get('id')
   if (id) {
     const fee = await f(`${API_V1}/fees/${id}`, token)
     const memberId = fee.body?.member
-    const [member, memberFees, companyFees] = await Promise.all([
-      memberId ? f(`${API_V1}/members/${memberId}`, token) : Promise.resolve(null),
-      memberId ? f(`${API_V1}/fees?member=${memberId}`, token) : Promise.resolve(null),
-      memberId ? f(`${API_V1}/fees?team=${memberId}`, token) : Promise.resolve(null),
-    ])
+    const member = memberId ? await f(`${API_V1}/members/${memberId}`, token) : null
     const teamId = member?.body?.team
-    const teamFees = teamId ? await f(`${API_V1}/fees?team=${teamId}`, token) : null
+    const [memberFees, teamFees] = await Promise.all([
+      memberId ? f(`${API_V1}/fees?member=${memberId}`, token) : Promise.resolve(null),
+      teamId ? f(`${API_V1}/fees?team=${teamId}`, token) : Promise.resolve(null),
+    ])
     return NextResponse.json({
       fee: fee.body,
-      member: member?.body ? { _id: member.body._id, name: member.body.name, team: member.body.team, office: member.body.office } : null,
+      member: member?.body ? { _id: member.body._id, name: member.body.name, team: member.body.team } : null,
       fees_by_member: memberFees?.body,
       fees_by_team: teamFees?.body,
     })
   }
 
-  return NextResponse.json({ usage: '?id=<fee_id>' })
+  return NextResponse.json({ usage: '?id=<fee_id> or ?probe=1 to test invoice endpoints' })
 }
