@@ -38,16 +38,15 @@ export async function GET(request: Request) {
     const feeId = searchParams.get('fee')
     const empty = JSON.stringify({})
 
-    if (memberId && feeId) {
-      // Try creating a payment (invoice) for a member with the fee as a line item
+    if (memberId) {
       const body = JSON.stringify({
         date: new Date().toISOString().slice(0, 10),
         location: '5d1bcda0dbd6e40010479eec',
         member: memberId,
-        lines: [{ fee: feeId }],
+        lines: [{ description: 'FOB Deposit: TEST-DEBUG', unitPrice: 1, quantity: 1 }],
       })
       const result = await f(`${API_V2}/payments`, token, { method: 'POST', body })
-      return NextResponse.json({ 'POST v2/payments with fee line': result })
+      return NextResponse.json({ 'POST v2/payments': result })
     }
 
     const [v2pay, recentPay] = await Promise.all([
