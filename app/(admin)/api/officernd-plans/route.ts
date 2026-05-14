@@ -13,7 +13,7 @@ async function getToken() {
       grant_type: 'client_credentials',
       client_id: process.env.OFFICERND_CLIENT_ID!,
       client_secret: process.env.OFFICERND_CLIENT_SECRET!,
-      scope: 'flex.billing.charges.read flex.billing.charges.create flex.billing.payments.read flex.billing.payments.create flex.billing.payments.documents.read flex.community.fees.read flex.community.members.read',
+      scope: 'flex.billing.charges.read flex.billing.charges.create flex.billing.payments.read flex.billing.payments.create flex.billing.payments.documents.read flex.community.fees.read flex.community.fees.create flex.community.members.read',
     }),
   })
   const data = await res.json()
