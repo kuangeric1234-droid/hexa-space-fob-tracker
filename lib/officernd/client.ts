@@ -219,18 +219,15 @@ const FOB_DEPOSIT_PLAN_ID = '6a051a414427d505a37e50c7'
 const LOCATION_ID = '5d1bcda0dbd6e40010479eec'
 
 export async function createFee(payload: CreateFeePayload): Promise<{ id: string }> {
-  const data = await apiFetch('/fees', {
+  const data = await apiFetch(`/members/${payload.memberId}/fees`, {
     method: 'POST',
     body: JSON.stringify({
-      member: payload.memberId,
       name: payload.name,
       price: payload.amount,
-      issueDate: new Date().toISOString(),
-      location: LOCATION_ID,
+      quantity: 1,
       plan: FOB_DEPOSIT_PLAN_ID,
-      isPersonal: true,
     }),
-  })
+  }, true)
   const id = data._id ?? data.id
   if (!id) throw new Error(`OfficeRnD fee created but no ID in response: ${JSON.stringify(data)}`)
   return { id }
