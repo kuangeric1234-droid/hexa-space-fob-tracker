@@ -13,7 +13,7 @@ async function getToken() {
       grant_type: 'client_credentials',
       client_id: process.env.OFFICERND_CLIENT_ID!,
       client_secret: process.env.OFFICERND_CLIENT_SECRET!,
-      scope: 'flex.billing.charges.read flex.billing.charges.create flex.community.fees.read flex.community.memberships.read',
+      scope: 'flex.billing.charges.read flex.billing.charges.create flex.community.fees.read flex.community.memberships.read flex.community.members.read',
     }),
   })
   const data = await res.json()
@@ -31,39 +31,25 @@ async function f(url: string, token: string, options?: RequestInit) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const token = await getToken()
+  const id = searchParams.get('id')
 
-  // Probe charges endpoints with an empty POST to see what fields are required
-  if (searchParams.get('probe')) {
-    const body = JSON.stringify({})
-    const results = await Promise.all([
-      f(`${API_V2}/charges`, token, { method: 'POST', body }),
-      f(`${API_V2}/billing/charges`, token, { method: 'POST', body }),
-      f(`${API_V1}/charges`, token, { method: 'POST', body }),
-      f(`${API_V2}/charges`, token),       // GET list
-      f(`${API_V2}/billing/charges`, token), // GET list
+  if (id) {
+    const fee = await f(`${API_V1}/fees/${id}`, token)
+    const memberId = fee.body?.member
+    const [member, memberFees, companyFees] = await Promise.all([
+      memberId ? f(`${API_V1}/members/${memberId}`, token) : Promise.resolve(null),
+      memberId ? f(`${API_V1}/fees?member=${memberId}`, token) : Promise.resolve(null),
+      memberId ? f(`${API_V1}/fees?team=${memberId}`, token) : Promise.resolve(null),
     ])
+    const teamId = member?.body?.team
+    const teamFees = teamId ? await f(`${API_V1}/fees?team=${teamId}`, token) : null
     return NextResponse.json({
-      'POST v2/charges': results[0],
-      'POST v2/billing/charges': results[1],
-      'POST v1/charges': results[2],
-      'GET v2/charges': results[3],
-      'GET v2/billing/charges': results[4],
+      fee: fee.body,
+      member: member?.body ? { _id: member.body._id, name: member.body.name, team: member.body.team, office: member.body.office } : null,
+      fees_by_member: memberFees?.body,
+      fees_by_team: teamFees?.body,
     })
   }
 
-  const id = searchParams.get('id')
-  if (id) {
-    const [membership, fee] = await Promise.all([
-      f(`${API_V1}/memberships/${id}`, token),
-      f(`${API_V1}/fees/${id}`, token),
-    ])
-    return NextResponse.json({ id, v1_membership: membership, v1_fee: fee })
-  }
-
-  // List plans so we can find the new one
-  const plans = await f(`${API_V1}/plans`, token)
-  const simple = Array.isArray(plans.body)
-    ? plans.body.map((p: any) => ({ id: p._id, name: p.name, type: p.type, interval: p.intervalLength, account: p.account }))
-    : plans.body
-  return NextResponse.json(simple)
+  return NextResponse.json({ usage: '?id=<fee_id>' })
 }
