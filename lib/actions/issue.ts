@@ -81,7 +81,7 @@ export async function issueFob(formData: FormData): Promise<IssueFormState> {
       issued_at: new Date().toISOString(),
       expected_return_at: expected_return_at || null,
       deposit_amount: depositAmount,
-      deposit_currency: 'USD',
+      deposit_currency: 'AUD',
       deposit_status: 'pending',
       issue_notes: issue_notes || null,
     })

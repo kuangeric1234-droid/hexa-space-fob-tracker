@@ -30,6 +30,8 @@ async function getToken(): Promise<string> {
         'flex.community.memberships.read',
         'flex.community.memberships.create',
         'flex.community.memberships.delete',
+        'flex.billing.charges.read',
+        'flex.billing.charges.create',
       ].join(' '),
     }),
   })
@@ -213,51 +215,57 @@ export interface CreateFeePayload {
   name: string
 }
 
-const FOB_DEPOSIT_PLAN_ID = '6a051a414427d505a37e50c7'
-const LOCATION_ID = '5d1bcda0dbd6e40010479eec'
+const DEPOSITS_ACCOUNT_ID = '5d1bcda0dbd6e40010479ed6'
 
-// OfficeRnD doesn't support ad-hoc fee creation via API.
-// Instead we create a one-time membership with the deposit plan,
-// which generates the charge automatically on the member's account.
+function dueDateIn7Days() {
+  const d = new Date()
+  d.setDate(d.getDate() + 7)
+  return d.toISOString().slice(0, 10)
+}
+
 export async function createFee(payload: CreateFeePayload): Promise<{ id: string }> {
-  const startDate = new Date().toISOString().slice(0, 10)
-  const data = await apiFetch('/memberships', {
+  const data = await apiFetch('/invoices', {
     method: 'POST',
     body: JSON.stringify({
       member: payload.memberId,
-      plan: FOB_DEPOSIT_PLAN_ID,
-      startDate,
-      price: payload.amount,
-      location: LOCATION_ID,
+      dueDate: dueDateIn7Days(),
+      lines: [{
+        name: payload.name,
+        price: payload.amount,
+        quantity: 1,
+        account: DEPOSITS_ACCOUNT_ID,
+      }],
     }),
   }, true)
   const id = data._id ?? data.id
-  if (!id) throw new Error(`OfficeRnD membership created but no ID in response: ${JSON.stringify(data)}`)
+  if (!id) throw new Error(`OfficeRnD invoice created but no ID in response: ${JSON.stringify(data)}`)
   return { id }
 }
 
 export async function createRefundFee(payload: CreateFeePayload): Promise<{ id: string }> {
-  const startDate = new Date().toISOString().slice(0, 10)
-  const data = await apiFetch('/memberships', {
+  const data = await apiFetch('/invoices', {
     method: 'POST',
     body: JSON.stringify({
       member: payload.memberId,
-      plan: FOB_DEPOSIT_PLAN_ID,
-      startDate,
-      price: -Math.abs(payload.amount),
-      location: LOCATION_ID,
+      dueDate: dueDateIn7Days(),
+      lines: [{
+        name: payload.name,
+        price: -Math.abs(payload.amount),
+        quantity: 1,
+        account: DEPOSITS_ACCOUNT_ID,
+      }],
     }),
   }, true)
   const id = data._id ?? data.id
-  if (!id) throw new Error(`OfficeRnD refund membership created but no ID in response: ${JSON.stringify(data)}`)
+  if (!id) throw new Error(`OfficeRnD refund invoice created but no ID in response: ${JSON.stringify(data)}`)
   return { id }
 }
 
 export async function getFeeStatus(feeId: string): Promise<string> {
-  const data = await apiFetch(`/memberships/${feeId}`, {}, true)
-  return data.status ?? 'unknown'
+  const data = await apiFetch(`/invoices/${feeId}`, {}, true)
+  return data.status ?? data.invoice?.status ?? 'unknown'
 }
 
 export async function voidFee(feeId: string): Promise<void> {
-  await apiFetch(`/memberships/${feeId}`, { method: 'DELETE' }, true)
+  await apiFetch(`/invoices/${feeId}`, { method: 'DELETE' }, true)
 }
