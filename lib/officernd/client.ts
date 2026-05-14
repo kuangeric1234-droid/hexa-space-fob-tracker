@@ -218,10 +218,9 @@ export async function createFee(payload: CreateFeePayload): Promise<{ id: string
       member: payload.memberId,
       amount: payload.amount,
       description: payload.description,
-      currency: payload.currency ?? 'USD',
-      type: 'fee',
+      issueDate: new Date().toISOString(),
     }),
-  })
+  }, true)
   return { id: data._id ?? data.id }
 }
 
@@ -232,18 +231,17 @@ export async function createRefundFee(payload: CreateFeePayload): Promise<{ id: 
       member: payload.memberId,
       amount: -Math.abs(payload.amount),
       description: payload.description,
-      currency: payload.currency ?? 'USD',
-      type: 'fee',
+      issueDate: new Date().toISOString(),
     }),
-  })
+  }, true)
   return { id: data._id ?? data.id }
 }
 
 export async function getFeeStatus(feeId: string): Promise<string> {
-  const data = await apiFetch(`/fees/${feeId}`)
+  const data = await apiFetch(`/fees/${feeId}`, {}, true)
   return data.status ?? 'unknown'
 }
 
 export async function voidFee(feeId: string): Promise<void> {
-  await apiFetch(`/fees/${feeId}`, { method: 'DELETE' })
+  await apiFetch(`/fees/${feeId}`, { method: 'DELETE' }, true)
 }
