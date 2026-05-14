@@ -229,7 +229,6 @@ export async function createFee(payload: CreateFeePayload): Promise<{ id: string
       location: LOCATION_ID,
       plan: FOB_DEPOSIT_PLAN_ID,
       isPersonal: true,
-      isRefundable: true,
       shouldBillInAdvance: true,
     }),
   })
@@ -247,7 +246,6 @@ export async function createRefundFee(payload: CreateFeePayload): Promise<{ id: 
       price: -Math.abs(payload.amount),
       issueDate: new Date().toISOString(),
       isPersonal: true,
-      isRefundable: true,
       shouldBillInAdvance: true,
       location: LOCATION_ID,
       plan: FOB_DEPOSIT_PLAN_ID,

@@ -56,7 +56,6 @@ export async function GET(request: Request) {
         location: '5d1bcda0dbd6e40010479eec',
         plan: '6a051a414427d505a37e50c7',
         isPersonal: true,
-        isRefundable: true,
         shouldBillInAdvance: true,
       })
       const result = await f(`${API_V2}/fees`, token, { method: 'POST', body })
