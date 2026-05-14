@@ -67,11 +67,12 @@ export async function returnFob(formData: FormData): Promise<ReturnFormState> {
 
   if (effectiveAction === 'refund' && assignment.deposit_status === 'paid' && assignment.officernd_fee_id) {
     try {
+      const fobType = (assignment.fob as any)?.type
+      const serial = (assignment.fob as any)?.serial_number
       const refund = await createRefundFee({
         memberId: member.officernd_id,
         amount: assignment.deposit_amount,
-        description: `Access ${(assignment.fob as any)?.type} deposit refund — ${(assignment.fob as any)?.serial_number}`,
-        currency: assignment.deposit_currency,
+        name: fobType === 'remote' ? `Remote Deposit Refund: ${serial}` : `FOB Deposit Refund: ${serial}`,
       })
       await supabase
         .from('assignments')

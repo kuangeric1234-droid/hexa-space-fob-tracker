@@ -204,44 +204,64 @@ export async function fetchAllMembers(): Promise<OfficerndMember[]> {
   return []
 }
 
+let locationIdCache: string | null = null
+
+async function getDefaultLocationId(): Promise<string> {
+  if (locationIdCache) return locationIdCache
+  const data = await apiFetch('/locations')
+  const locations = Array.isArray(data) ? data : (data.results ?? data.data ?? [])
+  if (!locations.length) throw new Error('No OfficeRnD locations found')
+  locationIdCache = locations[0]._id
+  return locationIdCache!
+}
+
 export interface CreateFeePayload {
   memberId: string
   amount: number
-  description: string
-  currency?: string
+  name: string
 }
 
 export async function createFee(payload: CreateFeePayload): Promise<{ id: string }> {
+  const planId = process.env.OFFICERND_FEE_PLAN_ID
+  if (!planId) throw new Error('OFFICERND_FEE_PLAN_ID env var is not set')
+  const locationId = await getDefaultLocationId()
   const data = await apiFetch('/fees', {
     method: 'POST',
     body: JSON.stringify({
       member: payload.memberId,
-      amount: payload.amount,
-      description: payload.description,
+      name: payload.name,
+      price: payload.amount,
       issueDate: new Date().toISOString(),
+      location: locationId,
+      plan: planId,
     }),
-  }, true)
+  })
   return { id: data._id ?? data.id }
 }
 
 export async function createRefundFee(payload: CreateFeePayload): Promise<{ id: string }> {
+  const planId = process.env.OFFICERND_FEE_PLAN_ID
+  if (!planId) throw new Error('OFFICERND_FEE_PLAN_ID env var is not set')
+  const locationId = await getDefaultLocationId()
   const data = await apiFetch('/fees', {
     method: 'POST',
     body: JSON.stringify({
       member: payload.memberId,
-      amount: -Math.abs(payload.amount),
-      description: payload.description,
+      name: payload.name,
+      price: -Math.abs(payload.amount),
       issueDate: new Date().toISOString(),
+      location: locationId,
+      plan: planId,
     }),
-  }, true)
+  })
   return { id: data._id ?? data.id }
 }
 
 export async function getFeeStatus(feeId: string): Promise<string> {
-  const data = await apiFetch(`/fees/${feeId}`, {}, true)
+  const data = await apiFetch(`/fees/${feeId}`)
   return data.status ?? 'unknown'
 }
 
 export async function voidFee(feeId: string): Promise<void> {
-  await apiFetch(`/fees/${feeId}`, { method: 'DELETE' }, true)
+  await apiFetch(`/fees/${feeId}`, { method: 'DELETE' })
 }

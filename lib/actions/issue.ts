@@ -113,8 +113,7 @@ export async function issueFob(formData: FormData): Promise<IssueFormState> {
       const fee = await createFee({
         memberId: member.officernd_id,
         amount: depositAmount,
-        description: type === 'remote' ? `Remote Deposit: ${normalizedSerial}` : `FOB Deposit: ${normalizedSerial}`,
-        currency: 'USD',
+        name: type === 'remote' ? `Remote Deposit: ${normalizedSerial}` : `FOB Deposit: ${normalizedSerial}`,
       })
 
       await supabase
