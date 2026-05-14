@@ -28,6 +28,15 @@ async function f(url: string, token: string, options?: RequestInit) {
   return { status: res.status, body: await res.json() }
 }
 
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
+  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+  const token = await getToken()
+  const res = await f(`${API_V2}/payments/${id}`, token, { method: 'DELETE' })
+  return NextResponse.json(res)
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const token = await getToken()
