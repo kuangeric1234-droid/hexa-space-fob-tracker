@@ -32,20 +32,31 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const token = await getToken()
 
-  // Probe invoice endpoints
+  // Probe invoice/payment endpoints
   if (searchParams.get('probe')) {
+    const memberId = searchParams.get('member')
+    const feeId = searchParams.get('fee')
     const empty = JSON.stringify({})
-    const [v2inv, v1inv, v2docs, v2billdocs] = await Promise.all([
-      f(`${API_V2}/invoices`, token, { method: 'POST', body: empty }),
-      f(`${API_V1}/invoices`, token, { method: 'POST', body: empty }),
-      f(`${API_V2}/documents`, token, { method: 'POST', body: empty }),
-      f(`${API_V2}/billing/documents`, token, { method: 'POST', body: empty }),
+
+    if (memberId && feeId) {
+      // Try creating a payment (invoice) for a member with the fee as a line item
+      const body = JSON.stringify({
+        date: new Date().toISOString().slice(0, 10),
+        location: '5d1bcda0dbd6e40010479eec',
+        member: memberId,
+        lines: [{ fee: feeId }],
+      })
+      const result = await f(`${API_V2}/payments`, token, { method: 'POST', body })
+      return NextResponse.json({ 'POST v2/payments with fee line': result })
+    }
+
+    const [v2pay, recentPay] = await Promise.all([
+      f(`${API_V2}/payments`, token, { method: 'POST', body: empty }),
+      f(`${API_V2}/payments`, token),
     ])
     return NextResponse.json({
-      'POST v2/invoices': v2inv,
-      'POST v1/invoices': v1inv,
-      'POST v2/documents': v2docs,
-      'POST v2/billing/documents': v2billdocs,
+      'POST v2/payments (empty probe)': v2pay,
+      'GET v2/payments (recent)': { status: recentPay.status, count: recentPay.body?.results?.length ?? recentPay.body?.length },
     })
   }
 
