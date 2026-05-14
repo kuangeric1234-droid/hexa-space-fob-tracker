@@ -219,27 +219,31 @@ const FOB_DEPOSIT_PLAN_ID = '6a051a414427d505a37e50c7'
 const LOCATION_ID = '5d1bcda0dbd6e40010479eec'
 
 export async function createFee(payload: CreateFeePayload): Promise<{ id: string }> {
-  // Fetch the member's team ID so the fee appears in company billing
-  let teamId: string | undefined
-  try {
-    const member = await apiFetch(`/members/${payload.memberId}`, {}, true)
-    teamId = member?.team
-  } catch {
-    // proceed without team if lookup fails
+  const member = await apiFetch(`/members/${payload.memberId}`, {}, true)
+  const teamId: string | undefined = member?.team
+
+  const body = {
+    member: payload.memberId,
+    ...(teamId && { team: teamId }),
+    name: payload.name,
+    price: payload.amount,
+    issueDate: new Date().toISOString(),
+    location: LOCATION_ID,
+    plan: FOB_DEPOSIT_PLAN_ID,
   }
 
-  const data = await apiFetch('/fees', {
-    method: 'POST',
-    body: JSON.stringify({
-      member: payload.memberId,
-      ...(teamId && { team: teamId }),
-      name: payload.name,
-      price: payload.amount,
-      issueDate: new Date().toISOString(),
-      location: LOCATION_ID,
-      plan: FOB_DEPOSIT_PLAN_ID,
-    }),
-  })
+  // Try team-scoped endpoint first so fee appears in company One-Off Fees tab
+  if (teamId) {
+    try {
+      const teamData = await apiFetch(`/teams/${teamId}/fees`, { method: 'POST', body: JSON.stringify(body) }, true)
+      const id = teamData._id ?? teamData.id
+      if (id) return { id }
+    } catch {
+      // fall through to global endpoint
+    }
+  }
+
+  const data = await apiFetch('/fees', { method: 'POST', body: JSON.stringify(body) })
   const id = data._id ?? data.id
   if (!id) throw new Error(`OfficeRnD fee created but no ID in response: ${JSON.stringify(data)}`)
   return { id }
