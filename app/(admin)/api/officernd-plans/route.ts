@@ -20,24 +20,32 @@ async function getToken() {
   return data.access_token as string
 }
 
+async function f(url: string, token: string, options?: RequestInit) {
+  const res = await fetch(url, { ...options, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...(options?.headers ?? {}) } })
+  return { status: res.status, body: await res.json() }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const feeId = searchParams.get('fee_id')
+  const memberId = searchParams.get('member_id')
 
   const token = await getToken()
 
   if (feeId) {
     const [v1, v2] = await Promise.all([
-      fetch(`${API_V1}/fees/${feeId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch(`${API_V2}/fees/${feeId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      f(`${API_V1}/fees/${feeId}`, token),
+      f(`${API_V2}/fees/${feeId}`, token),
     ])
     return NextResponse.json({ fee_id: feeId, v1, v2 })
   }
 
-  // List recent fees
-  const [v1fees, v2fees] = await Promise.all([
-    fetch(`${API_V1}/fees?limit=5`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-    fetch(`${API_V2}/fees?limit=5`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+  // List recent fees — optionally filtered by member
+  const memberQ = memberId ? `&member=${memberId}` : ''
+  const [v1fees, v2fees, v1memberships] = await Promise.all([
+    f(`${API_V1}/fees?limit=10${memberQ}`, token),
+    f(`${API_V2}/fees?limit=10${memberQ}`, token),
+    memberId ? f(`${API_V1}/memberships?member=${memberId}&limit=10`, token) : Promise.resolve(null),
   ])
-  return NextResponse.json({ v1_recent_fees: v1fees, v2_recent_fees: v2fees })
+  return NextResponse.json({ v1_fees: v1fees, v2_fees: v2fees, v1_memberships: v1memberships })
 }

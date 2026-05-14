@@ -225,7 +225,10 @@ export async function createFee(payload: CreateFeePayload): Promise<{ id: string
       plan: FEE_PLAN_ID,
     }),
   })
-  return { id: data._id ?? data.id }
+  // Throw so the full response lands in the audit log for debugging
+  const id = data._id ?? data.id
+  if (!id) throw new Error(`OfficeRnD fee created but no ID returned. Full response: ${JSON.stringify(data)}`)
+  return { id }
 }
 
 export async function createRefundFee(payload: CreateFeePayload): Promise<{ id: string }> {
