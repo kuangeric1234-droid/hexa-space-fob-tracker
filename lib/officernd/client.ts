@@ -210,47 +210,51 @@ export interface CreateFeePayload {
   name: string
 }
 
-const FEE_PLAN_ID = '6a051a414427d505a37e50c7'
+const FOB_DEPOSIT_PLAN_ID = '6a051a414427d505a37e50c7'
 const LOCATION_ID = '5d1bcda0dbd6e40010479eec'
 
+// OfficeRnD doesn't support ad-hoc fee creation via API.
+// Instead we create a one-time membership with the deposit plan,
+// which generates the charge automatically on the member's account.
 export async function createFee(payload: CreateFeePayload): Promise<{ id: string }> {
-  const data = await apiFetch('/fees', {
+  const startDate = new Date().toISOString().slice(0, 10)
+  const data = await apiFetch('/memberships', {
     method: 'POST',
     body: JSON.stringify({
       member: payload.memberId,
-      name: payload.name,
+      plan: FOB_DEPOSIT_PLAN_ID,
+      startDate,
       price: payload.amount,
-      issueDate: new Date().toISOString(),
       location: LOCATION_ID,
-      plan: FEE_PLAN_ID,
     }),
-  })
-  // Throw so the full response lands in the audit log for debugging
+  }, true)
   const id = data._id ?? data.id
-  if (!id) throw new Error(`OfficeRnD fee created but no ID returned. Full response: ${JSON.stringify(data)}`)
+  if (!id) throw new Error(`OfficeRnD membership created but no ID in response: ${JSON.stringify(data)}`)
   return { id }
 }
 
 export async function createRefundFee(payload: CreateFeePayload): Promise<{ id: string }> {
-  const data = await apiFetch('/fees', {
+  const startDate = new Date().toISOString().slice(0, 10)
+  const data = await apiFetch('/memberships', {
     method: 'POST',
     body: JSON.stringify({
       member: payload.memberId,
-      name: payload.name,
+      plan: FOB_DEPOSIT_PLAN_ID,
+      startDate,
       price: -Math.abs(payload.amount),
-      issueDate: new Date().toISOString(),
       location: LOCATION_ID,
-      plan: FEE_PLAN_ID,
     }),
-  })
-  return { id: data._id ?? data.id }
+  }, true)
+  const id = data._id ?? data.id
+  if (!id) throw new Error(`OfficeRnD refund membership created but no ID in response: ${JSON.stringify(data)}`)
+  return { id }
 }
 
 export async function getFeeStatus(feeId: string): Promise<string> {
-  const data = await apiFetch(`/fees/${feeId}`)
+  const data = await apiFetch(`/memberships/${feeId}`, {}, true)
   return data.status ?? 'unknown'
 }
 
 export async function voidFee(feeId: string): Promise<void> {
-  await apiFetch(`/fees/${feeId}`, { method: 'DELETE' })
+  await apiFetch(`/memberships/${feeId}`, { method: 'DELETE' }, true)
 }
