@@ -204,27 +204,16 @@ export async function fetchAllMembers(): Promise<OfficerndMember[]> {
   return []
 }
 
-let locationIdCache: string | null = null
-
-async function getDefaultLocationId(): Promise<string> {
-  if (locationIdCache) return locationIdCache
-  const data = await apiFetch('/locations')
-  const locations = Array.isArray(data) ? data : (data.results ?? data.data ?? [])
-  if (!locations.length) throw new Error('No OfficeRnD locations found')
-  locationIdCache = locations[0]._id
-  return locationIdCache!
-}
-
 export interface CreateFeePayload {
   memberId: string
   amount: number
   name: string
 }
 
+const FEE_PLAN_ID = '6a051a414427d505a37e50c7'
+const LOCATION_ID = '5d1bcda0dbd6e40010479eec'
+
 export async function createFee(payload: CreateFeePayload): Promise<{ id: string }> {
-  const planId = process.env.OFFICERND_FEE_PLAN_ID
-  if (!planId) throw new Error('OFFICERND_FEE_PLAN_ID env var is not set')
-  const locationId = await getDefaultLocationId()
   const data = await apiFetch('/fees', {
     method: 'POST',
     body: JSON.stringify({
@@ -232,17 +221,14 @@ export async function createFee(payload: CreateFeePayload): Promise<{ id: string
       name: payload.name,
       price: payload.amount,
       issueDate: new Date().toISOString(),
-      location: locationId,
-      plan: planId,
+      location: LOCATION_ID,
+      plan: FEE_PLAN_ID,
     }),
   })
   return { id: data._id ?? data.id }
 }
 
 export async function createRefundFee(payload: CreateFeePayload): Promise<{ id: string }> {
-  const planId = process.env.OFFICERND_FEE_PLAN_ID
-  if (!planId) throw new Error('OFFICERND_FEE_PLAN_ID env var is not set')
-  const locationId = await getDefaultLocationId()
   const data = await apiFetch('/fees', {
     method: 'POST',
     body: JSON.stringify({
@@ -250,8 +236,8 @@ export async function createRefundFee(payload: CreateFeePayload): Promise<{ id: 
       name: payload.name,
       price: -Math.abs(payload.amount),
       issueDate: new Date().toISOString(),
-      location: locationId,
-      plan: planId,
+      location: LOCATION_ID,
+      plan: FEE_PLAN_ID,
     }),
   })
   return { id: data._id ?? data.id }
