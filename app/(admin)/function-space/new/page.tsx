@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import type { Member } from '@/types'
 
 const EVENT_TYPES = [
   'Corporate event',
@@ -27,6 +28,44 @@ const SPACES = ['Function Space']
 export default function NewBookingPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+
+  // Member search
+  const [memberQuery, setMemberQuery] = useState('')
+  const [memberResults, setMemberResults] = useState<Member[]>([])
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [linkedMember, setLinkedMember] = useState<Member | null>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!memberQuery.trim() || linkedMember) { setMemberResults([]); return }
+    const t = setTimeout(async () => {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(memberQuery)}`)
+      if (res.ok) {
+        const data = await res.json()
+        setMemberResults(data.members ?? [])
+        setShowDropdown(true)
+      }
+    }, 250)
+    return () => clearTimeout(t)
+  }, [memberQuery, linkedMember])
+
+  function selectMember(m: Member) {
+    setLinkedMember(m)
+    setMemberQuery(m.name)
+    setShowDropdown(false)
+    setForm(f => ({
+      ...f,
+      client_name: m.name,
+      client_company: m.company ?? '',
+      client_email: m.email ?? '',
+    }))
+  }
+
+  function clearMember() {
+    setLinkedMember(null)
+    setMemberQuery('')
+  }
+
   const [form, setForm] = useState({
     client_name: '',
     client_company: '',
@@ -92,6 +131,57 @@ export default function NewBookingPage() {
         <Card>
           <CardContent className="pt-6 space-y-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Client</p>
+
+            {/* Member search */}
+            <div className="space-y-2">
+              <Label>Search existing member (optional)</Label>
+              <div className="relative" ref={dropdownRef}>
+                {linkedMember ? (
+                  <div className="flex items-center justify-between px-3 py-2 rounded-md border bg-violet-50 border-violet-200">
+                    <div>
+                      <span className="text-sm font-medium text-violet-800">{linkedMember.name}</span>
+                      {linkedMember.company && (
+                        <span className="text-xs text-violet-500 ml-2">{linkedMember.company}</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearMember}
+                      className="text-xs text-violet-400 hover:text-violet-700"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                ) : (
+                  <Input
+                    value={memberQuery}
+                    onChange={e => setMemberQuery(e.target.value)}
+                    onFocus={() => memberResults.length > 0 && setShowDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+                    placeholder="Type a name or company to search members..."
+                    autoComplete="off"
+                  />
+                )}
+                {showDropdown && memberResults.length > 0 && (
+                  <div className="absolute top-full mt-1 w-full bg-white border rounded-md shadow-lg z-20 max-h-48 overflow-y-auto">
+                    {memberResults.map(m => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                        onMouseDown={() => selectMember(m)}
+                      >
+                        <span className="font-medium">{m.name}</span>
+                        {m.company && <span className="text-gray-400 ml-2 text-xs">{m.company}</span>}
+                        {m.suite && <span className="text-gray-300 ml-2 text-xs">{m.suite}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-400">Selecting a member pre-fills the fields below. You can still edit them.</p>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="client_name">Name *</Label>
