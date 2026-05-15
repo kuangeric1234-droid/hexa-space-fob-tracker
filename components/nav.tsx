@@ -17,6 +17,8 @@ import {
   LogOut,
   Menu,
   X,
+  CalendarDays,
+  CalendarPlus,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -40,6 +42,13 @@ const navGroups = [
     items: [
       { href: '/fobs', label: 'Inventory', icon: Key },
       { href: '/members', label: 'Members', icon: Users },
+    ],
+  },
+  {
+    label: 'Function Space',
+    items: [
+      { href: '/function-space', label: 'Bookings', icon: CalendarDays },
+      { href: '/function-space/new', label: 'New booking', icon: CalendarPlus },
     ],
   },
   {
@@ -105,7 +114,7 @@ function SidebarContent({ pathname, onNavigate, onSignOut }: {
                   href={item.href}
                   label={item.label}
                   icon={item.icon}
-                  active={pathname === item.href}
+                  active={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href + '/'))}
                   onClick={onNavigate}
                 />
               ))}

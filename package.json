@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "import-csv": "tsx scripts/import-csv.ts"
+    "import-csv": "tsx scripts/import-csv.ts",
+    "import-sheets": "tsx scripts/import-sheets.ts scripts/sheets-data.json"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
